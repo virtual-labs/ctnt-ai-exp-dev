@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Lab: OS Process State Transitions</title>
+    <style>
+        /* CSS Variables for Theming */
+        /* Default Light Theme */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #cccccc;
+            --accent-color: #007bff; /* Blue accent */
+            --secondary-color: #f8f9fa;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --button-hover-bg: #0056b3;
+            --log-bg: #f1f1f1;
+            --log-text: #333333;
+            --process-bg: #e9ecef;
+            --process-border: #ced4da;
+            --state-ready-bg: #cfe2ff; /* Light Blue */
+            --state-running-bg: #d1e7dd; /* Light Green */
+            --state-waiting-bg: #fff3cd; /* Light Yellow */
+            --state-terminated-bg: #f8d7da; /* Light Red */
+            --state-new-bg: #e2e3e5; /* Light Gray */
+            --cpu-border: #adb5bd;
+            --queue-border: #adb5bd;
+            --pcb-bg: #e9ecef;
+            --pcb-border: #ced4da;
+            --tab-bg: #e9ecef;
+            --tab-active-bg: #d0e1ff;
+            --tab-border: #cccccc;
+            --tab-text: #0056b3;
+            --tab-active-text: #001f3f;
+            --quiz-question-bg: #f9f9f9;
+            --quiz-correct-bg: #d1e7dd;
+            --quiz-incorrect-bg: #f8d7da;
+            --theme-name: 'Light'; /* Identifier for the theme */
+        }
+
+        /* Dark Theme */
+        body.dark-theme {
+            --bg-color: #22272e; /* Dark background */
+            --text-color: #c9d1d9; /* Light text */
+            --border-color: #444c56; /* Darker borders */
+            --accent-color: #00ff00; /* Green accent */
+            --secondary-color: #2d333b; /* Slightly lighter dark */
+            --button-bg: #008000; /* Green button */
+            --button-text: #ffffff;
+            --button-hover-bg: #006400; /* Darker green */
+            --log-bg: #2d333b;
+            --log-text: #c9d1d9;
+            --process-bg: #373e47;
+            --process-border: #586069;
+            --state-ready-bg: #314c75; /* Darker blue */
+            --state-running-bg: #245a3a; /* Darker green */
+            --state-waiting-bg: #6e5a1c; /* Darker yellow */
+            --state-terminated-bg: #7d3a3f; /* Darker red */
+            --state-new-bg: #444c56; /* Darker gray */
+            --cpu-border: #586069;
+            --queue-border: #586069;
+            --pcb-bg: #373e47;
+            --pcb-border: #586069;
+            --tab-bg: #2d333b;
+            --tab-active-bg: #373e47;
+            --tab-border: #444c56;
+            --tab-text: #88f088; /* Light green */
+            --tab-active-text: #00ff00; /* Bright green */
+            --quiz-question-bg: #2d333b;
+            --quiz-correct-bg: #245a3a;
+            --quiz-incorrect-bg: #7d3a3f;
+            --theme-name: 'Dark';
+        }
+
+        /* Blue Theme */
+        body.blue-theme {
+            --bg-color: #e7f1ff; /* Very light blue background */
+            --text-color: #001f3f; /* Dark blue text */
+            --border-color: #a6c8ff; /* Medium blue border */
+            --accent-color: #ff6347; /* Tomato accent (contrast) */
+            --secondary-color: #d0e1ff; /* Light blue secondary */
+            --button-bg: #0056b3; /* Darker blue button */
+            --button-text: #ffffff;
+            --button-hover-bg: #003d80; /* Even darker blue */
+            --log-bg: #d0e1ff;
+            --log-text: #001f3f;
+            --process-bg: #b3d1ff; /* Lighter blue process */
+            --process-border: #8cbaff;
+            --state-ready-bg: #8cbaff; /* Medium blue */
+            --state-running-bg: #70a7ff; /* Brighter blue */
+            --state-waiting-bg: #ffcc99; /* Light orange for contrast */
+            --state-terminated-bg: #ffb3b3; /* Light red for contrast */
+            --state-new-bg: #cce0ff; /* Very light blue-gray */
+            --cpu-border: #5c9aff;
+            --queue-border: #5c9aff;
+            --pcb-bg: #b3d1ff;
+            --pcb-border: #8cbaff;
+            --tab-bg: #cce0ff;
+            --tab-active-bg: #a6c8ff;
+            --tab-border: #8cbaff;
+            --tab-text: #003d80;
+            --tab-active-text: #001f3f;
+            --quiz-question-bg: #d0e1ff;
+            --quiz-correct-bg: #c3e6cb; /* Light green */
+            --quiz-incorrect-bg: #f5c6cb; /* Light red */
+            --theme-name: 'Blue';
+        }
+
+        /* General Page Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .lab-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lab-header {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        /* Tab Navigation Styles */
+        .tab-navigation {
+            display: flex;
+            flex-wrap: wrap;
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            border-bottom: 1px solid var(--tab-border);
+        }
+
+        .tab-link {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: var(--tab-bg);
+            color: var(--tab-text);
+            border: 1px solid var(--tab-border);
+            border-bottom: none;
+            margin-right: 5px;
+            margin-bottom: -1px; /* Overlap bottom border */
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .tab-link:hover {
+            background-color: var(--tab-active-bg);
+        }
+
+        .tab-link.active {
+            background-color: var(--secondary-color); /* Match content area bg */
+            color: var(--tab-active-text);
+            border-bottom: 1px solid var(--secondary-color); /* Hide bottom border */
+            font-weight: bold;
+        }
+
+        /* Tab Content Styles */
+        .tab-content {
+            display: none; /* Hide all content sections by default */
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-top: none; /* Avoid double border with tabs */
+            border-radius: 0 0 8px 8px;
+            background-color: var(--secondary-color);
+            flex-grow: 1; /* Allow content to fill space */
+            min-height: 400px; /* Ensure minimum height */
+        }
+
+        .tab-content.active {
+            display: block; /* Show the active content section */
+        }
+
+        /* Specific Content Styling */
+        .tab-content h2, .tab-content h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+        }
+
+        .tab-content ul {
+            padding-left: 20px;
+        }
+        .tab-content li {
+            margin-bottom: 10px;
+        }
+        .tab-content p {
+            margin-bottom: 15px;
+        }
+        .tab-content code {
+            background-color: var(--log-bg);
+            color: var(--log-text);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .tab-content strong {
+             color: var(--accent-color);
+        }
+
+        /* Simulation Container Specific Styling */
+        #content-simulation {
+            padding: 0; /* Remove padding for the simulation tab content area */
+            border: none; /* Remove border for the simulation tab content area */
+            overflow: hidden; /* Ensure simulation fits */
+        }
+
+        /* Quiz Styles */
+        .quiz-question {
+            background-color: var(--quiz-question-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .quiz-question p {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .quiz-options label {
+            display: block;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .quiz-options input[type="radio"] {
+            margin-right: 8px;
+        }
+        .quiz-feedback {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: none; /* Hidden initially */
+        }
+        .quiz-feedback.correct {
+            background-color: var(--quiz-correct-bg);
+            color: #155724; /* Specific text color for light correct */
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        body.dark-theme .quiz-feedback.correct {
+             color: #c9d1d9; /* Adjust text color for dark correct */
+             border-color: #245a3a;
+        }
+        body.blue-theme .quiz-feedback.correct {
+             color: #0f5132; /* Adjust text color for blue correct */
+             border-color: #badbcc;
+        }
+
+        .quiz-feedback.incorrect {
+            background-color: var(--quiz-incorrect-bg);
+            color: #721c24; /* Specific text color for light incorrect */
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+         body.dark-theme .quiz-feedback.incorrect {
+             color: #c9d1d9; /* Adjust text color for dark incorrect */
+             border-color: #7d3a3f;
+        }
+         body.blue-theme .quiz-feedback.incorrect {
+             color: #58151c; /* Adjust text color for blue incorrect */
+             border-color: #f1b0b7;
+        }
+
+        .quiz-button, #quiz-results-button {
+            padding: 8px 15px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .quiz-button:hover:not(:disabled), #quiz-results-button:hover {
+            background-color: var(--button-hover-bg);
+        }
+         .quiz-button:disabled {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+            opacity: 0.7;
+         }
+        #quiz-score {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border: 1px dashed var(--accent-color);
+            border-radius: 5px;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .lab-container {
+                margin: 10px;
+                padding: 15px;
+            }
+            .tab-link {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+            .tab-content {
+                padding: 15px;
+            }
+            /* Adjust simulation layout if needed, though its internal CSS handles some */
+            #simulation-container .main-layout {
+                flex-direction: column; /* Stack simulation and side panel */
+            }
+             #simulation-container #simulation-area,
+             #simulation-container .side-panel {
+                min-width: unset; /* Remove min-width */
+                flex-basis: auto; /* Allow natural sizing */
+             }
+        }
+
+        /* --- Simulation Specific Styles (Embedded Here for Single File Requirement) --- */
+        /* Prefix with #simulation-container to scope them */
+        #simulation-container {
+            font-family: sans-serif;
+            background-color: var(--bg-color); /* Use global theme variable */
+            color: var(--text-color); /* Use global theme variable */
+            margin: 0; /* Reset margin */
+            padding: 0; /* Reset padding */
+            transition: background-color 0.3s, color 0.3s;
+            border: 1px solid var(--border-color); /* Add border to simulation area */
+            border-radius: 5px;
+            overflow: hidden; /* Contain floats/margins */
+            height: 100%; /* Try to fill tab content area */
+            display: flex; /* Use flex to make inner container fill height */
+            flex-direction: column;
+        }
+
+        #simulation-container #app-container { /* Target inner container */
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
+            flex-grow: 1; /* Allow app container to grow */
+        }
+
+        #simulation-container h1, #simulation-container h2 {
+            text-align: center;
+            color: var(--accent-color);
+            margin-top: 0; /* Adjust margin for embedding */
+            margin-bottom: 15px;
+            font-size: 1.5em; /* Adjust title size */
+        }
+
+        /* Layout Areas within Simulation */
+        #simulation-container .main-layout {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 15px;
+            flex-grow: 1; /* Allow layout to fill space */
+        }
+
+        #simulation-container #simulation-area {
+            flex: 3; /* Takes more space */
+            min-width: 350px; /* Adjusted min-width */
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #simulation-container .side-panel {
+            flex: 1; /* Takes less space */
+            min-width: 230px; /* Adjusted min-width */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #simulation-container #controls-area,
+        #simulation-container #pcb-details-area,
+        #simulation-container #log-area,
+        #simulation-container #theme-switcher {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border-radius: 5px;
+        }
+         #simulation-container #log-area {
+             flex-grow: 1; /* Allow log area to take remaining space in side panel */
+             display: flex;
+             flex-direction: column;
+         }
+
+        /* Simulation Area Elements */
+        #simulation-container .simulation-section {
+            border: 1px dashed var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            background-color: var(--bg-color); /* Give sections a background */
+        }
+        #simulation-container .simulation-section h3 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.1em;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        #simulation-container #cpu-display {
+            border: 2px solid var(--cpu-border);
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 50px; /* Ensure consistent height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            border-radius: 4px;
+        }
+
+        #simulation-container #ready-queue-display {
+            border: 2px solid var(--queue-border);
+            padding: 10px;
+            min-height: 40px;
+            background-color: var(--bg-color);
+            overflow-x: auto; /* Handle long queues */
+            border-radius: 4px;
+            white-space: nowrap; /* Prevent wrapping of process refs */
+        }
+        #simulation-container #ready-queue-display .process-ref {
+            display: inline-block;
+            padding: 2px 5px;
+            margin: 2px;
+            border: 1px solid var(--process-border);
+            border-radius: 3px;
+            background-color: var(--state-ready-bg);
+            font-size: 0.9em;
+            color: var(--text-color); /* Ensure text color contrasts with bg */
+        }
+
+        #simulation-container #process-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 100px;
+            align-content: flex-start; /* Align items to the top */
+            padding: 10px; /* Add some padding */
+            border: 1px dashed var(--border-color); /* Add border */
+            border-radius: 4px;
+            background-color: var(--bg-color);
+        }
+
+        /* Process Element Styling */
+        #simulation-container .process {
+            border: 1px solid var(--process-border);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, border-color 0.3s;
+            background-color: var(--process-bg);
+            position: relative;
+            min-width: 80px;
+            text-align: center;
+            color: var(--text-color); /* Ensure text color contrasts */
+        }
+        #simulation-container .process:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #simulation-container .process.selected {
+            border-width: 2px;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        /* State-specific styles */
+        #simulation-container .process.state-new { background-color: var(--state-new-bg); }
+        #simulation-container .process.state-ready { background-color: var(--state-ready-bg); }
+        #simulation-container .process.state-running {
+            background-color: var(--state-running-bg);
+            font-weight: bold;
+            border-color: var(--accent-color); /* Highlight running process */
+        }
+        #simulation-container .process.state-waiting { background-color: var(--state-waiting-bg); }
+        #simulation-container .process.state-terminated {
+            background-color: var(--state-terminated-bg);
+            opacity: 0.6;
+            text-decoration: line-through;
+            cursor: default;
+        }
+
+        /* Controls Area */
+        #simulation-container #controls-area h3 { margin-top: 0; text-align: center; }
+        #simulation-container #controls-area .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Responsive grid */
+            gap: 10px;
+        }
+        #simulation-container #controls-area button {
+            padding: 8px 12px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.9em;
+        }
+        #simulation-container #controls-area button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+        }
+        #simulation-container #controls-area button:disabled {
+            background-color: #cccccc; /* Use a neutral disabled color */
+            color: #666666;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* PCB Details Area */
+        #simulation-container #pcb-details-area h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+        #simulation-container #pcb-details-content p {
+            margin: 5px 0;
+            font-size: 0.9em;
+            word-wrap: break-word; /* Prevent long register values from overflowing */
+        }
+        #simulation-container #pcb-details-content span {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        #simulation-container #pcb-no-selection {
+            text-align: center;
+            font-style: italic;
+            color: #888; /* Keep this relatively neutral */
+        }
+
+        /* Log Area */
+        #simulation-container #log-area h3 {
+            margin-top: 0;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #simulation-container #log-output {
+            height: 200px; /* Default height */
+            flex-grow: 1; /* Allow log output to take space */
+            overflow-y: auto;
+            background-color: var(--log-bg);
+            color: var(--log-text);
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap; /* Wrap long lines */
+            word-wrap: break-word;
+        }
+
+        /* Theme Switcher */
+        #simulation-container #theme-switcher {
+            text-align: center;
+        }
+         #simulation-container #theme-switcher h3 { margin-top: 0; text-align: center; margin-bottom: 10px; }
+        #simulation-container #btn-theme-toggle {
+            padding: 8px 15px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%; /* Make button fill container */
+        }
+        #simulation-container #btn-theme-toggle:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+    </style>
+</head>
+<body> <!-- Theme class will be added here by JS -->
+
+    <div class="lab-container">
+        <h1 class="lab-header">Virtual Lab: Operating System Process Management</h1>
+
+        <!-- Tab Navigation -->
+        <ul class="tab-navigation">
+            <li class="tab-link active" data-tab="introduction">Introduction</li>
+            <li class="tab-link" data-tab="aim">Aim</li>
+            <li class="tab-link" data-tab="theory">Theory</li>
+            <li class="tab-link" data-tab="objective">Objective</li>
+            <li class="tab-link" data-tab="procedure">Procedure</li>
+            <li class="tab-link" data-tab="simulation">Simulation</li>
+            <li class="tab-link" data-tab="pretest">Pretest</li>
+        </ul>
+
+        <!-- Tab Content Area -->
+        <div class="tab-content-area">
+
+            <!-- Introduction Tab -->
+            <div id="content-introduction" class="tab-content active">
+                <h2>Welcome to the Process Simulation Lab!</h2>
+                <p>
+                    This virtual lab provides an interactive environment to explore the fundamental concepts of process management within an operating system. Its purpose is to give you a hands-on, visual understanding of how operating systems handle processes as they transition through various states (like Ready, Running, Waiting) and how the system switches between them (context switching).
+                </p>
+                <p>
+                    Understanding these core mechanisms is crucial for grasping how modern computers multitask and manage resources efficiently. Abstract concepts like process states and context switching can be challenging to learn from textbooks alone. This simulation allows you to directly manipulate processes, observe their lifecycle, and see the effects of system events, making these complex OS concepts more tangible and easier to comprehend.
+                </p>
+                <p>
+                    Navigate through the tabs to learn the theory, understand the objectives, follow the procedure, and then experiment with the interactive simulation!
+                </p>
+            </div>
+
+            <!-- Aim Tab -->
+            <div id="content-aim" class="tab-content">
+                <h2>Aim</h2>
+                <p>
+                    To simulate and visualize the lifecycle of processes within an operating system, focusing on state transitions (New, Ready, Running, Waiting, Terminated) and the concept of context switching.
+                </p>
+            </div>
+
+            <!-- Theory Tab -->
+            <div id="content-theory" class="tab-content">
+                <h2>Theory</h2>
+
+                <h3>What is a Process?</h3>
+                <p>
+                    A <strong>process</strong> is an instance of a computer program that is being executed. It's more than just the program code (which is sometimes called the 'text section'); it also includes the current activity, represented by the value of the <strong>Program Counter (PC)</strong> and the contents of the processor's <strong>registers</strong>. A process generally also includes:
+                </p>
+                <ul>
+                    <li>The <strong>process stack</strong>, which contains temporary data such as function parameters, return addresses, and local variables.</li>
+                    <li>A <strong>data section</strong>, which contains global variables.</li>
+                    <li>A <strong>heap</strong>, which is memory that is dynamically allocated during process run time.</li>
+                </ul>
+                <p>A program is a passive entity, like the contents of a file stored on disk, whereas a process is an active entity, with a program counter specifying the next instruction to execute and a set of associated resources.</p>
+
+                <h3>Process States</h3>
+                <p>As a process executes, it changes <strong>state</strong>. The state of a process is defined in part by the current activity of that process. Each process may be in one of the following states:</p>
+                <ul>
+                    <li><strong>New:</strong> The process is being created.</li>
+                    <li><strong>Ready:</strong> The process is waiting to be assigned to a processor (CPU). Ready processes are often kept in a queue called the <strong>Ready Queue</strong>.</li>
+                    <li><strong>Running:</strong> Instructions are being executed by the CPU.</li>
+                    <li><strong>Waiting (or Blocked):</strong> The process is waiting for some event to occur (such as an I/O completion or reception of a signal).</li>
+                    <li><strong>Terminated:</strong> The process has finished execution or has been explicitly killed.</li>
+                </ul>
+
+                <h3>State Transitions</h3>
+                <p>Processes move between these states based on system events or actions:</p>
+                <ul>
+                    <li><strong>Admit (New &rarr; Ready):</strong> When a new process is created, the operating system must decide whether to admit it to the pool of executable processes. If admitted, it enters the Ready state.</li>
+                    <li><strong>Dispatch (Ready &rarr; Running):</strong> The scheduler selects a process from the Ready Queue to execute on the CPU. This is called dispatching.</li>
+                    <li><strong>Timeout / Preemption (Running &rarr; Ready):</strong> The currently running process has used up its allocated time slice (quantum) or has been preempted by a higher-priority process. It moves back to the Ready Queue.</li>
+                    <li><strong>Event Wait / Block (Running &rarr; Waiting):</strong> The process requests something for which it must wait, such as an I/O operation (e.g., reading from a file) or waiting for a resource to become available. It enters the Waiting state.</li>
+                    <li><strong>Event Occurs / Wakeup (Waiting &rarr; Ready):</strong> The event the process was waiting for has occurred (e.g., I/O operation completed). The process is moved back to the Ready Queue, as it's now ready to run but must wait for the CPU.</li>
+                    <li><strong>Exit (Running &rarr; Terminated):</strong> The process has completed its execution normally or has been terminated by the operating system (e.g., due to an error or user request).</li>
+                </ul>
+                <p><i>(A visual state diagram could be placed here if complex HTML/CSS drawing or an image were allowed. Text descriptions are provided above.)</i></p>
+
+                <h3>Process Control Block (PCB)</h3>
+                <p>
+                    Each process is represented in the operating system by a <strong>Process Control Block (PCB)</strong>, also sometimes called a Task Control Block. The PCB contains crucial information associated with a specific process, essentially representing the process's entire execution context. Key information stored includes:
+                </p>
+                <ul>
+                    <li><strong>Process ID (PID):</strong> A unique identifier for the process.</li>
+                    <li><strong>Process State:</strong> The current state (New, Ready, Running, Waiting, Terminated).</li>
+                    <li><strong>Program Counter (PC):</strong> Indicates the address of the next instruction to be executed for this process.</li>
+                    <li><strong>CPU Registers:</strong> The current values of the CPU registers (accumulators, index registers, stack pointers, general-purpose registers, etc.). These must be saved when an interrupt occurs to allow the process to be continued correctly afterward.</li>
+                    <li><strong>CPU-Scheduling Information:</strong> Process priority, pointers to scheduling queues, and any other scheduling parameters.</li>
+                    <li><strong>Memory-Management Information:</strong> Information such as the value of the base and limit registers, page tables, or segment tables, depending on the memory system used by the OS.</li>
+                    <li><strong>Accounting Information:</strong> Amount of CPU and real time used, time limits, account numbers, job or process numbers, etc.</li>
+                    <li><strong>I/O Status Information:</strong> Information about I/O devices allocated to the process, a list of open files, etc.</li>
+                </ul>
+                <p>The PCB serves as the repository for any information that may vary from process to process.</p>
+
+                <h3>Context Switching</h3>
+                <p>
+                    <strong>Context Switching</strong> is the mechanism used by the operating system to switch the CPU core from executing one process (or thread) to executing another. When a context switch occurs, the system must save the state (context) of the currently running process so that it can resume execution later from the same point. The context is normally saved in the process's PCB.
+                </p>
+                <p>The typical steps involved are:</p>
+                <ol>
+                    <li>The OS receives an interrupt (e.g., timer interrupt for timeslice end, I/O completion interrupt) or the running process makes a system call (e.g., for I/O).</li>
+                    <li>The hardware switches from user mode to kernel mode.</li>
+                    <li>The OS saves the context of the currently running process (PC, registers, etc.) into its PCB.</li>
+                    <li>The OS updates the state of the current process (e.g., to Ready or Waiting).</li>
+                    <li>The OS scheduler selects another process from the Ready Queue to run.</li>
+                    <li>The OS loads the context (PC, registers, etc.) of the newly selected process from its PCB.</li>
+                    <li>The OS updates the state of the selected process to Running.</li>
+                    <li>The hardware switches back from kernel mode to user mode.</li>
+                    <li>The newly selected process resumes (or starts) execution.</li>
+                </ol>
+                <p>Context switching is pure <strong>overhead</strong>; the system does no useful work while switching. Its speed varies depending on hardware support and the complexity of the OS, but it's a necessary operation for multitasking.</p>
+            </div>
+
+            <!-- Objective Tab -->
+            <div id="content-objective" class="tab-content">
+                <h2>Learning Objectives</h2>
+                <p>Upon completing this virtual lab, you should be able to:</p>
+                <ul>
+                    <li>Identify and describe the five standard process states: New, Ready, Running, Waiting, and Terminated.</li>
+                    <li>Explain the conditions and events that cause a process to transition between these different states.</li>
+                    <li>Visualize the movement of processes between the CPU, the Ready Queue, and the Waiting state within the simulation.</li>
+                    <li>Understand the type of information contained within a Process Control Block (PCB) and its importance.</li>
+                    <li>Explain the purpose of context switching and outline the basic steps involved in saving and restoring a process's context.</li>
+                    <li>Utilize the simulator controls to actively create processes and trigger state transitions.</li>
+                </ul>
+            </div>
+
+            <!-- Procedure Tab -->
+            <div id="content-procedure" class="tab-content">
+                <h2>Procedure</h2>
+                <p>Follow these steps to use the interactive simulation:</p>
+                <ol>
+                    <li>Navigate to the <strong>'Simulation'</strong> tab using the tab navigation above.</li>
+                    <li>Click the <strong>'Create Process'</strong> button to add new processes to the system. Observe them initially appear in the 'Process Pool' and quickly move to the 'Ready Queue' display (representing the New &rarr; Ready transition).</li>
+                    <li>Observe the <strong>'CPU'</strong> display. If the CPU was idle and the Ready Queue was empty, the new process might immediately move to Running (Ready &rarr; Running). Otherwise, it waits in the queue.</li>
+                    <li>The <strong>'Ready Queue'</strong> display shows the PIDs (Process IDs) of processes waiting for the CPU, typically in FIFO (First-In, First-Out) order in this simple simulation.</li>
+                    <li>Click on any process element (e.g., 'P1 (Ready)') in the <strong>'Process Pool'</strong> area. Its details (PID, State, Program Counter, Registers) will be displayed in the <strong>'Process Control Block (PCB)'</strong> area on the right.</li>
+                    <li>If a process is running on the CPU, use the <strong>'Timeslice End'</strong> button. This simulates the scheduler preempting the process. Observe it move from Running back to the end of the Ready Queue (Running &rarr; Ready), and the next process from the queue (if any) being dispatched to the CPU. Note the context save/restore messages in the log.</li>
+                    <li>With a process running, use the <strong>'Block Running'</strong> button. This simulates the process requesting I/O. Observe it move from Running to the Waiting state (Running &rarr; Waiting) within the Process Pool. The CPU becomes idle, and the next ready process (if any) is dispatched. Note the context save message.</li>
+                    <li>If there are processes in the Waiting state, use the <strong>'Wakeup Process'</strong> button. This simulates an I/O operation completing for one waiting process. Observe it move from Waiting back to the Ready Queue (Waiting &rarr; Ready). If the CPU is idle, it might be dispatched shortly after.</li>
+                    <li>With a process running, use the <strong>'Terminate Running'</strong> button. Observe the process move from Running to the Terminated state (Running &rarr; Terminated). It will appear faded/struck-through in the Process Pool and is no longer active. The CPU becomes idle, and the next ready process (if any) is dispatched.</li>
+                    <li>Constantly monitor the <strong>'Simulation Log'</strong> area. It provides real-time, text-based feedback on all actions, state changes, context switches, and dispatcher decisions.</li>
+                    <li>Experiment with the <strong>'Switch Theme'</strong> button (located within the simulation panel) to change the visual appearance of the entire virtual lab interface (Light, Dark, Blue).</li>
+                    <li>Try creating multiple processes and observe how the simple FIFO scheduler manages them through various state transitions using the control buttons. Pay attention to the order in the Ready Queue and which process gets the CPU next.</li>
+                </ol>
+            </div>
+
+            <!-- Simulation Tab -->
+            <div id="content-simulation" class="tab-content">
+                <!--
+                    CRITICAL: The simulation code block below is placed directly inside this div.
+                    No other introductory text or elements should be added here.
+                    The simulation's own JS will handle its internal content and initialization.
+                -->
+                <!-- === START OF PROVIDED SIMULATION CODE === -->
+                <div id="simulation-container">
+                    <!-- Simulation HTML Structure -->
+                    <div id="app-container">
+                        <h1>Process State Transition & Context Switching Simulator</h1>
+
+                        <div class="main-layout">
+                            <!-- Simulation Visualization Area -->
+                            <div id="simulation-area">
+                                <!-- CPU Display -->
+                                <div class="simulation-section">
+                                    <h3>CPU</h3>
+                                    <div id="cpu-display">CPU: Idle</div>
+                                </div>
+
+                                <!-- Ready Queue Display -->
+                                <div class="simulation-section">
+                                    <h3>Ready Queue</h3>
+                                    <div id="ready-queue-display">[Empty]</div>
+                                </div>
+
+                                <!-- Process Pool (All States) -->
+                                <div class="simulation-section">
+                                    <h3>Process Pool (All States)</h3>
+                                    <div id="process-pool">
+                                        <!-- Process divs will be added here by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Controls, PCB, Log Panel -->
+                            <div class="side-panel">
+                                <!-- Controls -->
+                                <div id="controls-area">
+                                    <h3>Controls</h3>
+                                    <div class="control-buttons">
+                                        <button id="btn-create-process">Create Process</button>
+                                        <button id="btn-timeslice-end" disabled>Timeslice End</button>
+                                        <button id="btn-block-running" disabled>Block Running</button>
+                                        <button id="btn-wakeup-process" disabled>Wakeup Process</button>
+                                        <button id="btn-terminate-running" disabled>Terminate Running</button>
+                                        <!-- <button id="btn-step-simulation">Step (Optional)</button> -->
+                                    </div>
+                                </div>
+
+                                <!-- PCB Details -->
+                                <div id="pcb-details-area">
+                                    <h3>Process Control Block (PCB)</h3>
+                                    <div id="pcb-details-content">
+                                        <p id="pcb-no-selection">Click on a process to view its details.</p>
+                                        <!-- Details will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Log Area -->
+                                <div id="log-area">
+                                    <h3>Simulation Log</h3>
+                                    <pre id="log-output"></pre> <!-- Use <pre> for better log formatting -->
+                                </div>
+
+                                <!-- Theme Switcher -->
+                                <div id="theme-switcher">
+                                     <h3>Theme</h3>
+                                     <!-- Button text will be updated by JS -->
+                                    <button id="btn-theme-toggle">Switch Theme</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        // Immediately Invoked Function Expression (IIFE) to encapsulate the simulation logic
+                        (function() {
+                            'use strict'; // Enforce stricter parsing and error handling
+
+                            // --- DATA MODELS ---
+
+                            /**
+                             * Represents a process in the simulation.
+                             * @param {number} pid - Unique Process ID.
+                             */
+                            class Process {
+                                constructor(pid) {
+                                    this.pid = pid;
+                                    this.state = 'New'; // Initial state: New, Ready, Running, Waiting, Terminated
+                                    this.pc = Math.floor(Math.random() * 1000); // Program Counter (random initial value)
+                                    this.registers = { // Example registers
+                                        R1: Math.floor(Math.random() * 256),
+                                        R2: Math.floor(Math.random() * 256),
+                                        R3: Math.floor(Math.random() * 256),
+                                    };
+                                    this.contextSaved = false; // Flag indicating if context is saved (relevant when not running)
+                                    // Add more properties as needed (e.g., memory limits, priority, creation time)
+                                }
+                            }
+
+                            // --- SIMULATION STATE ---
+
+                            const SimulationState = {
+                                processes: {}, // Map of PID to Process object { pid: Process }
+                                readyQueue: [], // Array of PIDs in the Ready state (FIFO)
+                                cpu: {
+                                    runningPID: null // PID of the currently running process, or null if idle
+                                },
+                                nextPid: 1, // Counter for generating unique PIDs
+                                log: [], // Array of log messages
+                                selectedPID: null // PID of the process selected for PCB view
+                            };
+
+                            // --- THEME MANAGEMENT ---
+                            const THEMES = ['Light', 'Dark', 'Blue']; // Available themes
+                            const THEME_CLASSES = { // Mapping theme names to CSS classes
+                                'Light': '', // Default, no class needed
+                                'Dark': 'dark-theme',
+                                'Blue': 'blue-theme'
+                            };
+                            const THEME_STORAGE_KEY = 'processSimTheme'; // Key for localStorage
+
+                            // --- DOM ELEMENTS CACHE ---
+                            // Ensure selectors are scoped correctly *within* the simulation container
+                            const simContainer = document.getElementById('simulation-container'); // Get the container
+
+                            // Cache DOM elements only if simContainer exists
+                            const DOMElements = simContainer ? {
+                                body: document.body, // Cache body for theme switching (affects whole page)
+                                appContainer: simContainer.querySelector('#app-container'),
+                                cpuDisplay: simContainer.querySelector('#cpu-display'),
+                                readyQueueDisplay: simContainer.querySelector('#ready-queue-display'),
+                                processPool: simContainer.querySelector('#process-pool'),
+                                pcbDetailsContent: simContainer.querySelector('#pcb-details-content'),
+                                pcbNoSelection: simContainer.querySelector('#pcb-no-selection'),
+                                logOutput: simContainer.querySelector('#log-output'),
+                                btnCreateProcess: simContainer.querySelector('#btn-create-process'),
+                                btnTimesliceEnd: simContainer.querySelector('#btn-timeslice-end'),
+                                btnBlockRunning: simContainer.querySelector('#btn-block-running'),
+                                btnWakeupProcess: simContainer.querySelector('#btn-wakeup-process'),
+                                btnTerminateRunning: simContainer.querySelector('#btn-terminate-running'),
+                                btnThemeToggle: simContainer.querySelector('#btn-theme-toggle'),
+                            } : {}; // Provide empty object if container not found initially
+
+                            // --- LOGGING ---
+
+                            /**
+                             * Adds a message to the simulation log.
+                             * @param {string} message - The message to log.
+                             */
+                            function logMessage(message) {
+                                const timestamp = new Date().toLocaleTimeString();
+                                const logEntry = `[${timestamp}] ${message}`;
+                                SimulationState.log.push(logEntry);
+                                // Optional: Limit log size
+                                if (SimulationState.log.length > 200) { // Limit log size
+                                    SimulationState.log.shift();
+                                }
+                                renderLog(); // Update the log display immediately
+                            }
+
+                            // --- CONTEXT SWITCHING LOGIC ---
+
+                            /**
+                             * Simulates saving the context of a process (e.g., when moving from Running).
+                             * @param {number} pid - The PID of the process whose context is to be saved.
+                             */
+                            function saveContext(pid) {
+                                const process = SimulationState.processes[pid];
+                                if (process && process.state === 'Running') { // Only save if it was actually running
+                                    // Simulate saving: Increment PC slightly, maybe change a register
+                                    process.pc += Math.floor(Math.random() * 5) + 1; // Simulate instruction execution
+                                    process.registers.R1 = (process.registers.R1 + 1) % 256; // Simulate register change
+                                    process.contextSaved = true;
+                                    logMessage(`Context saved for Process P${pid} (PC=${process.pc})`);
+                                } else if (process) {
+                                    // If context was already saved (e.g., moving Ready -> Ready), don't re-save or log again.
+                                    // If process is not running, saving context doesn't usually happen here.
+                                }
+                            }
+
+                            /**
+                             * Simulates restoring the context of a process (e.g., when moving to Running).
+                             * @param {number} pid - The PID of the process whose context is to be restored.
+                             */
+                            function restoreContext(pid) {
+                                const process = SimulationState.processes[pid];
+                                if (process && process.contextSaved) {
+                                    // In a real scenario, this would load PC, registers etc. from the PCB.
+                                    // Here, we just log it and mark context as loaded (not saved anymore).
+                                    process.contextSaved = false;
+                                    logMessage(`Context restored for Process P${pid} (PC=${process.pc})`);
+                                } else if (process) {
+                                    // If context wasn't saved (e.g., New -> Ready -> Running), log that it's starting fresh.
+                                    logMessage(`No saved context to restore for P${pid}, starting execution.`);
+                                }
+                            }
+
+                            // --- SCHEDULER / DISPATCHER ---
+
+                            /**
+                             * Selects the next process from the ready queue and dispatches it to the CPU.
+                             * Assumes a simple FIFO (First-In, First-Out) scheduler.
+                             */
+                            function dispatchNextProcess() {
+                                // Only dispatch if CPU is idle
+                                if (SimulationState.cpu.runningPID === null) {
+                                    if (SimulationState.readyQueue.length > 0) {
+                                        const nextPID = SimulationState.readyQueue.shift(); // Get PID from front of queue
+                                        const process = SimulationState.processes[nextPID];
+
+                                        if (process && process.state === 'Ready') {
+                                            restoreContext(nextPID); // Restore context before running
+                                            process.state = 'Running';
+                                            SimulationState.cpu.runningPID = nextPID;
+                                            logMessage(`Dispatcher: Process P${nextPID} moved from Ready to Running.`);
+                                        } else {
+                                            // Handle inconsistency (should not happen with proper state management)
+                                            logMessage(`Dispatcher Error: Process P${nextPID} not found or not in Ready state. Removing from queue.`);
+                                            // Attempt to dispatch again if the queue still has items
+                                            if (SimulationState.readyQueue.length > 0) {
+                                                // Use setTimeout to avoid potential infinite loop in case of rapid errors
+                                                setTimeout(dispatchNextProcess, 0);
+                                            }
+                                        }
+                                    } else {
+                                        // CPU is idle and ready queue is empty
+                                        logMessage("Dispatcher: CPU is Idle, Ready Queue is empty.");
+                                    }
+                                }
+                                // If CPU is already busy, do nothing (wait for timeslice end, block, or termination)
+                                render(); // Update UI after potential dispatch
+                            }
+
+
+                            // --- STATE TRANSITION FUNCTIONS ---
+
+                            /**
+                             * Creates a new process, adds it to the simulation, and moves it to Ready.
+                             */
+                            function createProcess() {
+                                const pid = SimulationState.nextPid++;
+                                const newProcess = new Process(pid);
+                                SimulationState.processes[pid] = newProcess;
+                                logMessage(`Process P${pid} created in New state.`);
+
+                                // Transition: New -> Ready
+                                // In many models, this transition happens almost immediately.
+                                // Use setTimeout to make the 'New' state briefly visible if desired
+                                setTimeout(() => {
+                                    if (SimulationState.processes[pid] && SimulationState.processes[pid].state === 'New') {
+                                        SimulationState.processes[pid].state = 'Ready';
+                                        SimulationState.readyQueue.push(pid); // Add to the end of the ready queue
+                                        logMessage(`Process P${pid} moved from New to Ready.`);
+
+                                        // If CPU is idle, try to dispatch a process (might be this new one or another)
+                                        if (SimulationState.cpu.runningPID === null) {
+                                            dispatchNextProcess();
+                                        } else {
+                                            render(); // Still need to render the new process in the pool/queue
+                                        }
+                                    }
+                                }, 50); // Short delay (50ms) to show 'New' state visually
+
+                                render(); // Render immediately to show the 'New' process
+                            }
+
+                            /**
+                             * Handles the end of a time slice for the running process.
+                             * Moves the running process back to the Ready queue (if it exists).
+                             */
+                            function timesliceEnd() {
+                                const runningPID = SimulationState.cpu.runningPID;
+                                if (runningPID !== null) {
+                                    const process = SimulationState.processes[runningPID];
+                                    if (process) {
+                                        saveContext(runningPID); // Save context before moving to Ready
+                                        // Transition: Running -> Ready
+                                        process.state = 'Ready';
+                                        SimulationState.readyQueue.push(runningPID); // Add to the end of the queue
+                                        SimulationState.cpu.runningPID = null; // CPU becomes idle
+                                        logMessage(`Timeslice End: Process P${runningPID} moved from Running to Ready.`);
+                                        dispatchNextProcess(); // Dispatch the next process from the ready queue
+                                    } else {
+                                         logMessage(`Timeslice End Error: Running process P${runningPID} not found.`);
+                                         SimulationState.cpu.runningPID = null; // Clear CPU state anyway
+                                         dispatchNextProcess();
+                                    }
+                                } else {
+                                    logMessage("Timeslice End: No process is currently running.");
+                                    render(); // Update button states etc.
+                                }
+                            }
+
+                            /**
+                             * Moves the currently running process to the Waiting state (e.g., for I/O).
+                             */
+                            function blockRunningProcess() {
+                                const runningPID = SimulationState.cpu.runningPID;
+                                if (runningPID !== null) {
+                                     const process = SimulationState.processes[runningPID];
+                                     if (process) {
+                                        saveContext(runningPID); // Save context before blocking
+                                        // Transition: Running -> Waiting
+                                        process.state = 'Waiting';
+                                        SimulationState.cpu.runningPID = null; // CPU becomes idle
+                                        logMessage(`I/O Request: Process P${runningPID} moved from Running to Waiting.`);
+                                        dispatchNextProcess(); // Dispatch the next process
+                                     } else {
+                                         logMessage(`Block Request Error: Running process P${runningPID} not found.`);
+                                         SimulationState.cpu.runningPID = null; // Clear CPU state anyway
+                                         dispatchNextProcess();
+                                     }
+                                } else {
+                                    logMessage("Block Request: No process is currently running.");
+                                    render(); // Update button states etc.
+                                }
+                            }
+
+                            /**
+                             * Moves a waiting process back to the Ready state (e.g., I/O complete).
+                             * For simplicity, wakes the first process found in the Waiting state.
+                             */
+                            function wakeupProcess() {
+                                let wokenPID = null;
+                                // Find the first process in the Waiting state based on PID order for consistency
+                                const waitingPIDs = Object.keys(SimulationState.processes)
+                                    .map(Number)
+                                    .sort((a, b) => a - b) // Sort by PID
+                                    .filter(pid => SimulationState.processes[pid].state === 'Waiting');
+
+                                if (waitingPIDs.length > 0) {
+                                    wokenPID = waitingPIDs[0]; // Get the lowest PID waiting process
+                                    const process = SimulationState.processes[wokenPID];
+                                    // Transition: Waiting -> Ready
+                                    process.state = 'Ready';
+                                    SimulationState.readyQueue.push(wokenPID); // Add to end of queue
+                                    logMessage(`I/O Complete: Process P${wokenPID} moved from Waiting to Ready.`);
+                                }
+
+                                if (wokenPID === null) {
+                                    logMessage("Wakeup Request: No processes are currently in the Waiting state.");
+                                    render(); // Update button states
+                                } else {
+                                    // If CPU is idle, try to dispatch a process
+                                    if (SimulationState.cpu.runningPID === null) {
+                                        dispatchNextProcess();
+                                    } else {
+                                        render(); // Update UI (queue, process state)
+                                    }
+                                }
+                            }
+
+                            /**
+                             * Terminates the currently running process.
+                             */
+                            function terminateRunningProcess() {
+                                const runningPID = SimulationState.cpu.runningPID;
+                                if (runningPID !== null) {
+                                    const process = SimulationState.processes[runningPID];
+                                     if (process) {
+                                        // Context saving before termination might depend on the OS model (often not saved/relevant)
+                                        // saveContext(runningPID); // Usually not needed for termination
+
+                                        // Transition: Running -> Terminated
+                                        process.state = 'Terminated';
+                                        SimulationState.cpu.runningPID = null; // CPU becomes idle
+                                        logMessage(`Termination: Process P${runningPID} moved from Running to Terminated.`);
+
+                                        // If the terminated process was selected, deselect it
+                                        if (SimulationState.selectedPID === runningPID) {
+                                            SimulationState.selectedPID = null;
+                                        }
+
+                                        // Optionally remove from SimulationState.processes after some time or keep for display
+                                        // delete SimulationState.processes[runningPID]; // Example: immediate removal
+                                        // Or just leave it in the 'Terminated' state for visualization
+
+                                        dispatchNextProcess(); // Dispatch the next process
+                                     } else {
+                                         logMessage(`Terminate Request Error: Running process P${runningPID} not found.`);
+                                         SimulationState.cpu.runningPID = null; // Clear CPU state anyway
+                                         dispatchNextProcess();
+                                     }
+                                } else {
+                                    logMessage("Terminate Request: No process is currently running.");
+                                    render(); // Update button states etc.
+                                }
+                            }
+
+                            // --- UI RENDERING FUNCTIONS ---
+
+                            /**
+                             * Renders all processes in the process pool area, applying state classes.
+                             */
+                            function renderProcesses() {
+                                if (!DOMElements.processPool) return; // Guard against element not found
+                                DOMElements.processPool.innerHTML = ''; // Clear previous render
+                                // Sort processes by PID for consistent display order
+                                const sortedPIDs = Object.keys(SimulationState.processes).map(Number).sort((a, b) => a - b);
+
+                                if (sortedPIDs.length === 0) {
+                                     DOMElements.processPool.innerHTML = '<p style="text-align: center; font-style: italic; color: #888;">No processes created yet.</p>';
+                                     return;
+                                }
+
+                                sortedPIDs.forEach(pid => {
+                                    const process = SimulationState.processes[pid];
+                                    const processDiv = document.createElement('div');
+                                    // Base class + state-specific class
+                                    processDiv.className = `process state-${process.state.toLowerCase()}`;
+                                    processDiv.id = `process-${process.pid}`;
+                                    processDiv.textContent = `P${process.pid} (${process.state})`;
+                                    processDiv.dataset.pid = process.pid; // Store PID for click handling
+
+                                    // Add selected class if this process is selected
+                                    if (process.pid === SimulationState.selectedPID) {
+                                        processDiv.classList.add('selected');
+                                    }
+
+                                    // Add click listener only if not terminated (terminated processes are not interactive)
+                                    if (process.state !== 'Terminated') {
+                                        processDiv.addEventListener('click', handleProcessClick);
+                                    } else {
+                                         processDiv.style.cursor = 'default'; // Indicate non-interactive
+                                    }
+
+                                    DOMElements.processPool.appendChild(processDiv);
+                                });
+                            }
+
+                            /**
+                             * Renders the current state of the CPU display.
+                             */
+                            function renderCPU() {
+                                if (!DOMElements.cpuDisplay) return;
+                                if (SimulationState.cpu.runningPID !== null) {
+                                    DOMElements.cpuDisplay.innerHTML = `CPU: Running <strong>P${SimulationState.cpu.runningPID}</strong>`; // Use innerHTML for bold
+                                    DOMElements.cpuDisplay.style.fontWeight = 'bold'; // Keep bold style for consistency
+                                } else {
+                                    DOMElements.cpuDisplay.textContent = 'CPU: Idle';
+                                    DOMElements.cpuDisplay.style.fontWeight = 'normal';
+                                }
+                            }
+
+                            /**
+                             * Renders the Ready Queue display.
+                             */
+                            function renderReadyQueue() {
+                                if (!DOMElements.readyQueueDisplay) return;
+                                DOMElements.readyQueueDisplay.innerHTML = ''; // Clear previous render
+                                if (SimulationState.readyQueue.length === 0) {
+                                    DOMElements.readyQueueDisplay.textContent = '[Empty]';
+                                } else {
+                                     // DOMElements.readyQueueDisplay.textContent = 'Queue: '; // Add label if needed
+                                     SimulationState.readyQueue.forEach(pid => {
+                                        const pidSpan = document.createElement('span');
+                                        pidSpan.className = 'process-ref'; // Style for PIDs in queue
+                                        pidSpan.textContent = `P${pid}`;
+                                        DOMElements.readyQueueDisplay.appendChild(pidSpan);
+                                     });
+                                }
+                            }
+
+                            /**
+                             * Renders the details of the selected process in the PCB area.
+                             */
+                            function renderPCBDetails() {
+                                if (!DOMElements.pcbDetailsContent || !DOMElements.pcbNoSelection) return;
+                                if (SimulationState.selectedPID !== null && SimulationState.processes[SimulationState.selectedPID]) {
+                                    const process = SimulationState.processes[SimulationState.selectedPID];
+                                    // Format PCB details nicely
+                                    DOMElements.pcbDetailsContent.innerHTML = `
+                                        <p>PID: <span>${process.pid}</span></p>
+                                        <p>State: <span>${process.state}</span></p>
+                                        <p>Program Counter (PC): <span>${process.pc}</span></p>
+                                        <p>Registers: <span>${JSON.stringify(process.registers)}</span></p>
+                                        <p>Context Saved: <span>${process.contextSaved}</span></p>
+                                        <!-- Add more PCB fields here if needed -->
+                                    `;
+                                    DOMElements.pcbNoSelection.style.display = 'none'; // Hide placeholder
+                                } else {
+                                    DOMElements.pcbDetailsContent.innerHTML = ''; // Clear details if no valid selection
+                                    DOMElements.pcbNoSelection.style.display = 'block'; // Show placeholder
+                                    // If selectedPID is set but process doesn't exist (e.g., terminated and removed), clear selection
+                                    if (SimulationState.selectedPID !== null && !SimulationState.processes[SimulationState.selectedPID]) {
+                                        SimulationState.selectedPID = null;
+                                    }
+                                }
+                            }
+
+                            /**
+                             * Renders the simulation log, scrolling to the bottom.
+                             */
+                            function renderLog() {
+                                if (!DOMElements.logOutput) return;
+                                // Join log entries with newline characters for display in <pre>
+                                DOMElements.logOutput.textContent = SimulationState.log.join('\n');
+                                // Auto-scroll to the bottom to show the latest messages
+                                DOMElements.logOutput.scrollTop = DOMElements.logOutput.scrollHeight;
+                            }
+
+                            /**
+                             * Updates the enabled/disabled state of control buttons based on simulation state.
+                             */
+                            function updateButtonStates() {
+                                // Check if all required buttons exist before trying to update them
+                                if (!DOMElements.btnTimesliceEnd || !DOMElements.btnBlockRunning ||
+                                    !DOMElements.btnTerminateRunning || !DOMElements.btnWakeupProcess ||
+                                    !DOMElements.btnCreateProcess) {
+                                    // Don't log warning repeatedly if elements aren't found yet during init
+                                    // console.warn("One or more control buttons not found during updateButtonStates.");
+                                    return;
+                                }
+
+                                const isCPUIdle = SimulationState.cpu.runningPID === null;
+                                // Check if there's at least one process in the 'Waiting' state
+                                const hasWaitingProcess = Object.values(SimulationState.processes).some(p => p.state === 'Waiting');
+
+                                // Enable/disable buttons based on whether an action is possible
+                                DOMElements.btnTimesliceEnd.disabled = isCPUIdle;
+                                DOMElements.btnBlockRunning.disabled = isCPUIdle;
+                                DOMElements.btnTerminateRunning.disabled = isCPUIdle;
+                                DOMElements.btnWakeupProcess.disabled = !hasWaitingProcess;
+                                // Create button is always enabled in this simple model
+                                DOMElements.btnCreateProcess.disabled = false;
+                            }
+
+                            /**
+                             * Updates the theme toggle button text to show the *next* theme.
+                             */
+                            function updateThemeButtonText() {
+                                 if (!DOMElements.btnThemeToggle) return;
+                                 const currentTheme = getCurrentTheme();
+                                 const currentIndex = THEMES.indexOf(currentTheme);
+                                 const nextIndex = (currentIndex + 1) % THEMES.length;
+                                 const nextTheme = THEMES[nextIndex];
+                                 DOMElements.btnThemeToggle.textContent = `Switch to ${nextTheme} Theme`;
+                            }
+
+
+                            /**
+                             * Master render function to update the entire UI based on the current SimulationState.
+                             */
+                            function render() {
+                                // Check if simulation container exists before rendering its children
+                                if (!simContainer || !DOMElements.processPool) {
+                                    // Don't log error repeatedly if elements aren't ready yet
+                                    // console.error("Simulation container or essential elements not found. Cannot render simulation UI.");
+                                    return;
+                                }
+                                renderProcesses();      // Update process divs in the pool
+                                renderCPU();            // Update CPU status display
+                                renderReadyQueue();     // Update ready queue display
+                                renderPCBDetails();     // Update PCB details view
+                                // renderLog() is called directly by logMessage to ensure immediate updates
+                                updateButtonStates();   // Update enable/disable state of control buttons
+                                // Theme button text is updated separately on load and toggle
+                            }
+
+                            // --- EVENT HANDLERS ---
+
+                            /**
+                             * Handles clicks on process divs to show PCB details.
+                             * @param {Event} event - The click event.
+                             */
+                            function handleProcessClick(event) {
+                                // Get PID from the clicked element's dataset
+                                const pid = parseInt(event.currentTarget.dataset.pid); // Use currentTarget in case click is on inner element
+                                if (!isNaN(pid) && SimulationState.processes[pid]) { // Check if PID is valid and process exists
+                                    const oldSelectedPID = SimulationState.selectedPID;
+
+                                    // If clicking the already selected process, deselect it
+                                    if (oldSelectedPID === pid) {
+                                        SimulationState.selectedPID = null;
+                                        logMessage(`User Action: Deselected Process P${pid}.`);
+                                        event.currentTarget.classList.remove('selected');
+                                    } else {
+                                        SimulationState.selectedPID = pid;
+                                        logMessage(`User Action: Selected Process P${pid} for PCB view.`);
+
+                                        // Remove 'selected' from previously selected element (if any)
+                                        if (oldSelectedPID !== null) {
+                                            const oldSelectedDiv = simContainer.querySelector(`#process-${oldSelectedPID}`);
+                                            if (oldSelectedDiv) {
+                                                oldSelectedDiv.classList.remove('selected');
+                                            }
+                                        }
+                                        // Add 'selected' to the newly clicked element
+                                        event.currentTarget.classList.add('selected');
+                                    }
+
+                                    // Render PCB details
+                                    renderPCBDetails();
+                                    // No need to call full render() if only selection changed
+                                }
+                            }
+
+                            /**
+                             * Handles clicks on the 'Create Process' button.
+                             */
+                            function handleCreateProcessClick() {
+                                logMessage("User Action: Clicked 'Create Process'.");
+                                createProcess(); // Create the process and move it to Ready
+                                // render() is called within createProcess/dispatchNextProcess
+                            }
+
+                            /**
+                             * Handles clicks on the 'Timeslice End' button.
+                             */
+                            function handleTimesliceEndClick() {
+                                 logMessage("User Action: Clicked 'Timeslice End'.");
+                                 timesliceEnd(); // Move running process to Ready, dispatch next
+                                 // render() is called within timesliceEnd/dispatchNextProcess
+                            }
+
+                            /**
+                             * Handles clicks on the 'Block Running' button.
+                             */
+                            function handleBlockRunningClick() {
+                                 logMessage("User Action: Clicked 'Block Running'.");
+                                 blockRunningProcess(); // Move running process to Waiting, dispatch next
+                                 // render() is called within blockRunningProcess/dispatchNextProcess
+                            }
+
+                            /**
+                             * Handles clicks on the 'Wakeup Process' button.
+                             */
+                            function handleWakeupProcessClick() {
+                                 logMessage("User Action: Clicked 'Wakeup Process'.");
+                                 wakeupProcess(); // Move a waiting process to Ready, maybe dispatch
+                                 // render() is called within wakeupProcess/dispatchNextProcess
+                            }
+
+                            /**
+                             * Handles clicks on the 'Terminate Running' button.
+                             */
+                            function handleTerminateRunningClick() {
+                                 logMessage("User Action: Clicked 'Terminate Running'.");
+                                 terminateRunningProcess(); // Move running process to Terminated, dispatch next
+                                 // render() is called within terminateRunningProcess/dispatchNextProcess
+                            }
+
+                             /**
+                             * Gets the current theme name based on body classes.
+                             * @returns {string} The name of the current theme ('Light', 'Dark', 'Blue').
+                             */
+                             function getCurrentTheme() {
+                                if (!DOMElements.body) return 'Light'; // Safety check
+                                if (DOMElements.body.classList.contains(THEME_CLASSES.Blue)) {
+                                    return 'Blue';
+                                } else if (DOMElements.body.classList.contains(THEME_CLASSES.Dark)) {
+                                    return 'Dark';
+                                } else {
+                                    return 'Light'; // Default
+                                }
+                             }
+
+                             /**
+                             * Applies a theme by setting the appropriate class on the body.
+                             * Affects the entire page if styles are set up correctly.
+                             * @param {string} themeName - The name of the theme to apply ('Light', 'Dark', 'Blue').
+                             */
+                             function applyTheme(themeName) {
+                                if (!DOMElements.body) return; // Safety check
+
+                                // Remove all theme classes first
+                                Object.values(THEME_CLASSES).forEach(className => {
+                                    if (className) { // Don't try to remove empty string class
+                                        DOMElements.body.classList.remove(className);
+                                    }
+                                });
+
+                                // Add the class for the new theme (if it's not 'Light')
+                                const newClass = THEME_CLASSES[themeName];
+                                if (newClass) {
+                                    DOMElements.body.classList.add(newClass);
+                                }
+
+                                // Update button text and save preference
+                                updateThemeButtonText();
+                                try {
+                                    localStorage.setItem(THEME_STORAGE_KEY, themeName);
+                                } catch (e) {
+                                    console.warn("Could not save theme preference to localStorage.");
+                                    logMessage("Warning: Could not save theme preference.");
+                                }
+                             }
+
+                            /**
+                             * Handles clicks on the 'Toggle Theme' button. Cycles through themes.
+                             */
+                            function handleThemeToggleClick() {
+                                const currentTheme = getCurrentTheme();
+                                const currentIndex = THEMES.indexOf(currentTheme);
+                                const nextIndex = (currentIndex + 1) % THEMES.length; // Cycle through themes
+                                const nextTheme = THEMES[nextIndex];
+
+                                applyTheme(nextTheme); // Apply the next theme
+                                logMessage(`User Action: Switched theme to ${nextTheme}.`);
+                            }
+
+                            // --- INITIALIZATION ---
+
+                            /**
+                             * Initializes the simulation: loads theme, attaches event listeners, performs initial render.
+                             * This should be called *after* the simulation HTML is injected into the DOM and its elements are available.
+                             */
+                            function initializeSimulation() {
+                                // Re-check essential elements now that it's supposed to be initialized
+                                if (!simContainer || !DOMElements.btnCreateProcess || !DOMElements.logOutput) {
+                                     console.error("Simulation container or essential controls not found during initialization. Aborting simulation setup.");
+                                     // Optionally display an error message to the user within the simulation tab
+                                     const simTabContent = document.getElementById('content-simulation');
+                                     if(simTabContent) {
+                                         simTabContent.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error: Failed to initialize simulation interface. Required elements might be missing.</p>';
+                                     }
+                                     return;
+                                }
+
+                                logMessage("Simulation Initializing...");
+
+                                // Attach event listeners to controls
+                                DOMElements.btnCreateProcess.addEventListener('click', handleCreateProcessClick);
+                                DOMElements.btnTimesliceEnd.addEventListener('click', handleTimesliceEndClick);
+                                DOMElements.btnBlockRunning.addEventListener('click', handleBlockRunningClick);
+                                DOMElements.btnWakeupProcess.addEventListener('click', handleWakeupProcessClick);
+                                DOMElements.btnTerminateRunning.addEventListener('click', handleTerminateRunningClick);
+                                DOMElements.btnThemeToggle.addEventListener('click', handleThemeToggleClick);
+
+                                 // Load and apply saved theme preference (affects the whole body)
+                                // Theme application is now handled by the main page script on load,
+                                // but we still need to set the button text correctly.
+                                updateThemeButtonText(); // Set initial theme button text
+
+                                // Initial render of the UI elements within the simulation container
+                                render();
+                                logMessage(`Simulation Ready. Theme is ${getCurrentTheme()}.`);
+                            }
+
+                            // Expose the initializer globally so the main page script can call it
+                            // when the simulation tab is activated.
+                            window.initializeProcessSimulation = initializeSimulation;
+
+
+                        })(); // End of IIFE
+                    </script>
+                </div> <!-- End of simulation-container -->
+                <!-- === END OF PROVIDED SIMULATION CODE === -->
+            </div>
+
+            <!-- Pretest Tab -->
+            <div id="content-pretest" class="tab-content">
+                <h2>Pretest Questions</h2>
+                <p>Test your understanding of the basic concepts before starting the simulation.</p>
+
+                <div id="quiz-container">
+                    <!-- Question 1 -->
+                    <div class="quiz-question" id="q1">
+                        <p>1. Which state is a process in when it is created but not yet admitted by the OS to the pool of executable processes?</p>
+                        <div class="quiz-options">
+                            <label><input type="radio" name="q1" value="a"> Ready</label>
+                            <label><input type="radio" name="q1" value="b"> New</label>
+                            <label><input type="radio" name="q1" value="c"> Waiting</label>
+                            <label><input type="radio" name="q1" value="d"> Terminated</label>
+                        </div>
+                        <button class="quiz-button" data-question="q1">Check Answer</button>
+                        <div class="quiz-feedback" id="q1-feedback"></div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="quiz-question" id="q2">
+                        <p>2. What event typically causes a process to transition from the Running state to the Waiting state?</p>
+                        <div class="quiz-options">
+                            <label><input type="radio" name="q2" value="a"> Timeslice/Quantum expires</label>
+                            <label><input type="radio" name="q2" value="b"> The process completes its execution</label>
+                            <label><input type="radio" name="q2" value="c"> An I/O request or waiting for an event</label>
+                            <label><input type="radio" name="q2" value="d"> The scheduler selects another process</label>
+                        </div>
+                        <button class="quiz-button" data-question="q2">Check Answer</button>
+                        <div class="quiz-feedback" id="q2-feedback"></div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="quiz-question" id="q3">
+                        <p>3. What is the data structure used by the OS to hold processes that are ready and waiting for CPU time?</p>
+                        <div class="quiz-options">
+                            <label><input type="radio" name="q3" value="a"> Process Control Block (PCB)</label>
+                            <label><input type="radio" name="q3" value="b"> Waiting Queue</label>
+                            <label><input type="radio" name="q3" value="c"> Ready Queue</label>
+                            <label><input type="radio" name="q3" value="d"> Job Pool</label>
+                        </div>
+                        <button class="quiz-button" data-question="q3">Check Answer</button>
+                        <div class="quiz-feedback" id="q3-feedback"></div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="quiz-question" id="q4">
+                        <p>4. What is the primary purpose of the Process Control Block (PCB)?</p>
+                        <div class="quiz-options">
+                            <label><input type="radio" name="q4" value="a"> To store the program's executable code</label>
+                            <label><input type="radio" name="q4" value="b"> To manage dynamic memory allocation (heap)</label>
+                            <label><input type="radio" name="q4" value="c"> To store the execution context (state, PC, registers, etc.) of a process</label>
+                            <label><input type="radio" name="q4" value="d"> To hold temporary function parameters and local variables</label>
+                        </div>
+                        <button class="quiz-button" data-question="q4">Check Answer</button>
+                        <div class="quiz-feedback" id="q4-feedback"></div>
+                    </div>
+
+                     <!-- Question 5 -->
+                    <div class="quiz-question" id="q5">
+                        <p>5. The process of saving the state of the current process and loading the state of the next process is called:</p>
+                        <div class="quiz-options">
+                            <label><input type="radio" name="q5" value="a"> Multiprogramming</label>
+                            <label><input type="radio" name="q5" value="b"> Context Switching</label>
+                            <label><input type="radio" name="q5" value="c"> Dispatching</label>
+                            <label><input type="radio" name="q5" value="d"> Scheduling</label>
+                        </div>
+                        <button class="quiz-button" data-question="q5">Check Answer</button>
+                        <div class="quiz-feedback" id="q5-feedback"></div>
+                    </div>
+
+                </div>
+
+                <button id="quiz-results-button">Show Results</button>
+                <div id="quiz-score" style="display: none;"></div>
+
+            </div>
+
+        </div> <!-- End Tab Content Area -->
+
+    </div> <!-- End Lab Container -->
+
+    <script>
+        // --- Main Page Script (Tabs, Quiz, Theme Init) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabLinks = document.querySelectorAll('.tab-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const quizContainer = document.getElementById('quiz-container');
+            const resultsButton = document.getElementById('quiz-results-button');
+            const scoreDisplay = document.getElementById('quiz-score');
+
+            let simulationInitialized = false; // Flag to track simulation init
+
+            // --- Theme Initialization ---
+            // Load saved theme preference on page load
+            const THEME_STORAGE_KEY_MAIN = 'processSimTheme'; // Use same key as simulation
+            const THEMES_MAIN = ['Light', 'Dark', 'Blue'];
+            const THEME_CLASSES_MAIN = { 'Light': '', 'Dark': 'dark-theme', 'Blue': 'blue-theme' };
+
+            let savedTheme = 'Light'; // Default
+            try {
+                const storedTheme = localStorage.getItem(THEME_STORAGE_KEY_MAIN);
+                if (storedTheme && THEMES_MAIN.includes(storedTheme)) {
+                    savedTheme = storedTheme;
+                }
+            } catch (e) {
+                console.warn("Could not load theme preference from localStorage.");
+            }
+            // Apply theme class to body
+            const themeClass = THEME_CLASSES_MAIN[savedTheme];
+            if (themeClass) {
+                document.body.classList.add(themeClass);
+            }
+            // Note: The simulation's theme button text will be updated when it initializes
+
+
+            // --- Tab Switching Logic ---
+            tabLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const targetTab = link.getAttribute('data-tab');
+
+                    // Deactivate current active tab and content
+                    document.querySelector('.tab-link.active').classList.remove('active');
+                    document.querySelector('.tab-content.active').classList.remove('active');
+
+                    // Activate new tab and content
+                    link.classList.add('active');
+                    const newContent = document.getElementById(`content-${targetTab}`);
+                    if (newContent) {
+                        newContent.classList.add('active');
+
+                        // --- Initialize Simulation ---
+                        // Check if the simulation tab is now active AND it hasn't been initialized yet
+                        if (targetTab === 'simulation' && !simulationInitialized) {
+                            // Check if the initializer function exists (it should be exposed by the simulation script)
+                            if (typeof window.initializeProcessSimulation === 'function') {
+                                try {
+                                    window.initializeProcessSimulation();
+                                    simulationInitialized = true; // Set flag
+                                } catch (error) {
+                                     console.error("Error initializing simulation:", error);
+                                     // Display error in the simulation tab
+                                     newContent.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error initializing simulation. Check console for details.</p>';
+                                }
+                            } else {
+                                console.error("Simulation initializer function 'initializeProcessSimulation' not found.");
+                                 newContent.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error: Simulation script did not load correctly.</p>';
+                            }
+                        }
+                    } else {
+                        console.error(`Tab content not found for target: content-${targetTab}`);
+                    }
+                });
+            });
+
+            // --- Quiz Logic ---
+            if (quizContainer) {
+                const correctAnswers = {
+                    q1: 'b', // New
+                    q2: 'c', // I/O request
+                    q3: 'c', // Ready Queue
+                    q4: 'c', // Store context
+                    q5: 'b'  // Context Switching
+                };
+                const questions = quizContainer.querySelectorAll('.quiz-question');
+                let score = 0;
+                let answeredQuestions = 0;
+
+                questions.forEach(questionDiv => {
+                    const questionId = questionDiv.id;
+                    const checkButton = questionDiv.querySelector('.quiz-button');
+                    const feedbackDiv = questionDiv.querySelector('.quiz-feedback');
+                    const radioButtons = questionDiv.querySelectorAll('input[type="radio"]');
+
+                    checkButton.addEventListener('click', () => {
+                        const selectedOption = questionDiv.querySelector(`input[name="${questionId}"]:checked`);
+
+                        if (selectedOption) {
+                            const userAnswer = selectedOption.value;
+                            const correctAnswer = correctAnswers[questionId];
+                            const isCorrect = userAnswer === correctAnswer;
+
+                            if (isCorrect) {
+                                feedbackDiv.textContent = 'Correct!';
+                                feedbackDiv.className = 'quiz-feedback correct'; // Add correct class
+                                score++;
+                            } else {
+                                const correctLabel = questionDiv.querySelector(`input[value="${correctAnswer}"]`).parentElement.textContent.trim();
+                                feedbackDiv.innerHTML = `Incorrect. The correct answer is: <strong>${correctLabel}</strong>`; // Use innerHTML for bold
+                                feedbackDiv.className = 'quiz-feedback incorrect'; // Add incorrect class
+                            }
+
+                            // Disable inputs and button for this question
+                            radioButtons.forEach(radio => radio.disabled = true);
+                            checkButton.disabled = true;
+                            answeredQuestions++;
+
+                            // Enable results button if all questions answered
+                            if (answeredQuestions === questions.length) {
+                                resultsButton.style.display = 'block'; // Show the results button
+                            }
+
+                        } else {
+                            feedbackDiv.textContent = 'Please select an answer.';
+                            feedbackDiv.className = 'quiz-feedback incorrect'; // Show as incorrect feedback style
+                        }
+                         feedbackDiv.style.display = 'block'; // Make feedback visible
+                    });
+                });
+
+                resultsButton.addEventListener('click', () => {
+                    scoreDisplay.textContent = `Quiz Result: You answered ${score} out of ${questions.length} questions correctly.`;
+                    scoreDisplay.style.display = 'block'; // Show score
+                });
+                 resultsButton.style.display = 'none'; // Hide initially
+                 scoreDisplay.style.display = 'none'; // Hide initially
+
+            } else {
+                console.warn("Quiz container not found.");
+            }
+
+        });
+    </script>
+
+</body>
+</html>
